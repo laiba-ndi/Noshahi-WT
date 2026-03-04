@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, adminGuard } from './guards/auth.guard';
+import { authGuard, adminGuard, managerGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
     { path: 'login', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
@@ -15,7 +15,7 @@ export const routes: Routes = [
             { path: 'tasks', loadComponent: () => import('./pages/tasks/tasks.component').then(m => m.TasksComponent) },
             { path: 'time-tracking', loadComponent: () => import('./pages/time-tracking/time-tracking.component').then(m => m.TimeTrackingComponent) },
             { path: 'reports', loadComponent: () => import('./pages/reports/reports.component').then(m => m.ReportsComponent) },
-            { path: 'team', loadComponent: () => import('./pages/team/team.component').then(m => m.TeamComponent), canActivate: [adminGuard] },
+            { path: 'team', loadComponent: () => import('./pages/team/team.component').then(m => m.TeamComponent), canActivate: [managerGuard] },
         ]
     },
     { path: '**', redirectTo: 'dashboard' }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
@@ -10,7 +10,12 @@ import { User, TimeEntry } from '../models/interfaces';
     standalone: true,
     imports: [CommonModule, RouterModule],
     template: `
-    <div class="layout" [class.sidebar-collapsed]="sidebarCollapsed">
+    <div class="layout" [class.sidebar-collapsed]="sidebarCollapsed" [class.mobile-open]="mobileSidebarOpen">
+      <!-- Mobile Overlay -->
+      @if (mobileSidebarOpen) {
+        <div class="sidebar-overlay" (click)="mobileSidebarOpen = false"></div>
+      }
+      
       <!-- Sidebar -->
       <aside class="sidebar">
         <div class="sidebar-header">
@@ -61,14 +66,14 @@ import { User, TimeEntry } from '../models/interfaces';
             </a>
           </div>
 
-          @if (user?.role === 'Admin') {
+          @if (user?.role === 'Admin' || user?.role === 'Manager') {
             <div class="nav-section">
               @if (!sidebarCollapsed) {
-                <div class="nav-label">Admin</div>
+                <div class="nav-label">Team</div>
               }
               <a routerLink="/team" routerLinkActive="active" class="nav-item">
                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                @if (!sidebarCollapsed) { <span>Team</span> }
+                @if (!sidebarCollapsed) { <span>Team Management</span> }
               </a>
             </div>
           }
@@ -99,16 +104,19 @@ import { User, TimeEntry } from '../models/interfaces';
         <!-- Top Header -->
         <header class="top-header">
           <div class="header-left">
-            <button class="btn-icon toggle-btn" (click)="sidebarCollapsed = !sidebarCollapsed">
+            <button class="btn-icon toggle-btn desktop-toggle" (click)="sidebarCollapsed = !sidebarCollapsed">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <button class="btn-icon toggle-btn mobile-toggle" (click)="mobileSidebarOpen = !mobileSidebarOpen">
               <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
           </div>
           <div class="header-right">
-            @if (runningTimer) {
+            @if (runningTimer && runningTimer.startTime) {
               <div class="timer-widget">
                 <div class="timer-dot"></div>
                 <span>{{ formatRunningTime() }}</span>
-                <span class="timer-task">{{ runningTimer.workItemTitle || 'No task' }}</span>
+                <span class="timer-task">{{ runningTimer.workItemTitle || 'No task selected' }}</span>
               </div>
             }
             <div class="header-user">
@@ -124,6 +132,11 @@ import { User, TimeEntry } from '../models/interfaces';
         <div class="page-content">
           <router-outlet></router-outlet>
         </div>
+        
+        <!-- Footer -->
+        <footer class="main-footer">
+          Made by Noshahi Developers Inc.
+        </footer>
       </main>
     </div>
   `,
@@ -228,6 +241,7 @@ import { User, TimeEntry } from '../models/interfaces';
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      background: var(--bg-primary);
     }
     .top-header {
       height: 56px;
@@ -235,26 +249,28 @@ import { User, TimeEntry } from '../models/interfaces';
       align-items: center;
       justify-content: space-between;
       padding: 0 24px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(15, 15, 35, 0.8);
-      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      background: var(--gradient-primary);
+      color: white;
       flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
     }
     .header-left { display: flex; align-items: center; gap: 12px; }
     .header-right { display: flex; align-items: center; gap: 16px; }
-    .header-user { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
-
+    .header-user { display: flex; align-items: center; gap: 8px; font-size: 13px; color: rgba(255,255,255,0.9); font-weight: 500; }
+    
     .timer-widget {
       display: flex;
       align-items: center;
       gap: 8px;
       padding: 6px 14px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.2);
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: var(--radius-full);
       font-size: 13px;
       font-weight: 600;
-      color: #34d399;
+      color: white;
+      backdrop-filter: blur(10px);
     }
     .timer-dot {
       width: 8px;
@@ -264,7 +280,7 @@ import { User, TimeEntry } from '../models/interfaces';
       animation: pulse 1.5s ease infinite;
     }
     .timer-task {
-      color: var(--text-secondary);
+      color: rgba(255, 255, 255, 0.8);
       font-weight: 400;
       max-width: 120px;
       overflow: hidden;
@@ -277,32 +293,92 @@ import { User, TimeEntry } from '../models/interfaces';
       overflow-y: auto;
       padding: 24px;
     }
-    .toggle-btn { display: flex; }
+    .main-footer {
+      padding: 12px 24px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      border-top: 1px solid var(--border);
+      background: var(--bg-secondary);
+      font-weight: 500;
+    }
+    .desktop-toggle { display: flex; }
+    .mobile-toggle { display: none; }
+    
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .desktop-toggle { display: none; }
+      .mobile-toggle { display: flex; }
+      
+      .sidebar {
+        position: fixed;
+        left: -250px;
+        top: 0;
+        bottom: 0;
+        z-index: 101;
+        transition: left var(--transition-base);
+      }
+      .sidebar-collapsed .sidebar { width: 250px; left: -250px; }
+      
+      .mobile-open .sidebar {
+        left: 0;
+        width: 250px;
+      }
+      .mobile-open .sidebar-overlay { display: block; }
+      
+      .top-header { padding: 0 16px; }
+      .page-content { padding: 16px; }
+      .timer-task { display: none; }
+      
+      /* Force expanded state when open on mobile */
+      .mobile-open .logo-text { display: block; }
+      .mobile-open .nav-label { display: block; }
+      .mobile-open .nav-item span { display: inline; }
+      .mobile-open .nav-item { justify-content: flex-start; padding: 10px 12px; }
+      .mobile-open .user-info { display: flex; }
+      .mobile-open .user-details { display: block; }
+    }
   `]
 })
 export class LayoutComponent implements OnInit {
     user: User | null = null;
     sidebarCollapsed = false;
+    mobileSidebarOpen = false;
     runningTimer: TimeEntry | null = null;
     private timerInterval: any;
 
-    constructor(private authService: AuthService, private apiService: ApiService, private router: Router) { }
+    constructor(private authService: AuthService, private apiService: ApiService, private router: Router, private cdr: ChangeDetectorRef) { }
 
     ngOnInit() {
-        this.authService.currentUser$.subscribe((u: User | null) => this.user = u);
-        this.checkRunningTimer();
+        this.authService.currentUser$.subscribe((u: User | null) => {
+            this.user = u;
+            this.cdr.markForCheck();
+        });
+        setTimeout(() => {
+            this.checkRunningTimer();
+        }, 0);
         this.timerInterval = setInterval(() => this.checkRunningTimer(), 30000);
     }
 
     checkRunningTimer() {
         this.apiService.getRunningTimer().subscribe({
-            next: (timer: TimeEntry | null) => this.runningTimer = timer,
+            next: (timer: TimeEntry | null) => {
+                this.runningTimer = timer;
+                this.cdr.markForCheck();
+            },
             error: () => { }
         });
     }
 
     formatRunningTime(): string {
-        if (!this.runningTimer) return '00:00';
+        if (!this.runningTimer || !this.runningTimer.startTime) return '00:00';
         const start = new Date(this.runningTimer.startTime).getTime();
         const now = Date.now();
         const diff = Math.floor((now - start) / 1000);

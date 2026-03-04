@@ -1,11 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap&font-display=swap');
 
+/* Primary Palette */
 :root {
-    /* Primary Palette */
-    --primary: #6366f1;
-    --primary-light: #818cf8;
-    --primary-dark: #4f46e5;
-    --primary-subtle: rgba(99, 102, 241, 0.1);
+    --primary: #4f46e5;
+    --primary-light: #6366f1;
+    --primary-dark: #3730a3;
+    --primary-subtle: rgba(79, 70, 229, 0.1);
 
     /* Accent Colors */
     --accent-green: #10b981;
@@ -17,38 +17,40 @@
     --accent-pink: #ec4899;
     --accent-orange: #f97316;
 
-    /* Dark Theme */
-    --bg-primary: #0f0f23;
-    --bg-secondary: #1a1a3e;
-    --bg-tertiary: #252552;
-    --bg-card: rgba(30, 30, 70, 0.6);
-    --bg-card-hover: rgba(40, 40, 90, 0.8);
-    --bg-glass: rgba(255, 255, 255, 0.05);
-    --bg-glass-hover: rgba(255, 255, 255, 0.08);
-    --bg-input: rgba(255, 255, 255, 0.06);
-    --bg-sidebar: #12122e;
+    /* Light Colorful Theme */
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-card-hover: rgba(255, 255, 255, 1);
+    --bg-glass: rgba(255, 255, 255, 0.6);
+    --bg-glass-hover: rgba(255, 255, 255, 0.8);
+    --bg-input: #ffffff;
+    --bg-sidebar: #ffffff;
 
     /* Text */
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
     --text-tertiary: #64748b;
-    --text-inverse: #0f172a;
+    --text-inverse: #ffffff;
 
     /* Borders */
-    --border: rgba(255, 255, 255, 0.08);
-    --border-light: rgba(255, 255, 255, 0.12);
-    --border-active: rgba(99, 102, 241, 0.4);
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
+    --border-active: rgba(99, 102, 241, 0.5);
 
     /* Shadows */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.25);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
-    --gradient-card: linear-gradient(145deg, rgba(30, 30, 70, 0.8), rgba(20, 20, 50, 0.6));
-    --gradient-sidebar: linear-gradient(180deg, #12122e, #0f0f23);
+    --gradient-primary: linear-gradient(135deg, #4f46e5, #ec4899, #f59e0b);
+    --gradient-card: linear-gradient(145deg, #ffffff, #f8fafc);
+    --gradient-sidebar: linear-gradient(180deg, #ffffff, #f1f5f9);
 
     /* Radius */
     --radius-sm: 6px;

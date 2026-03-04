@@ -1,14 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { WorkItem } from '../../models/interfaces';
 
 @Component({
-    selector: 'app-tasks',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
+  selector: 'app-tasks',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
     <div class="tasks-page animate-fade-in">
       <div class="page-header">
         <div>
@@ -63,7 +63,7 @@ import { WorkItem } from '../../models/interfaces';
       }
     </div>
   `,
-    styles: [`
+  styles: [`
     .page-header { margin-bottom: 20px; }
     .page-header h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
     .task-filters {
@@ -108,31 +108,38 @@ import { WorkItem } from '../../models/interfaces';
   `]
 })
 export class TasksComponent implements OnInit {
-    tasks: WorkItem[] = [];
-    loading = true;
-    filter = 'all';
+  tasks: WorkItem[] = [];
+  loading = true;
+  filter = 'all';
 
-    constructor(private api: ApiService, private auth: AuthService) { }
+  constructor(private api: ApiService, private auth: AuthService, private cdr: ChangeDetectorRef) { }
 
-    ngOnInit() {
-        const userId = this.auth.getCurrentUser()?.id;
-        this.api.getWorkItems(undefined, undefined, userId).subscribe({
-            next: (items) => { this.tasks = items; this.loading = false; },
-            error: () => this.loading = false
-        });
-    }
+  ngOnInit() {
+    const userId = this.auth.getCurrentUser()?.id;
+    this.api.getWorkItems(undefined, undefined, userId).subscribe({
+      next: (items) => {
+        this.tasks = items;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
-    filteredTasks(): WorkItem[] {
-        if (this.filter === 'all') return this.tasks;
-        return this.tasks.filter(t => t.status === this.filter);
-    }
+  filteredTasks(): WorkItem[] {
+    if (this.filter === 'all') return this.tasks;
+    return this.tasks.filter(t => t.status === this.filter);
+  }
 
-    countByStatus(status: string): number {
-        return this.tasks.filter(t => t.status === status).length;
-    }
+  countByStatus(status: string): number {
+    return this.tasks.filter(t => t.status === status).length;
+  }
 
-    getStatusColor(status: string): string {
-        const colors: Record<string, string> = { Todo: '#94a3b8', InProgress: '#3b82f6', InReview: '#f59e0b', Done: '#10b981' };
-        return colors[status] || '#94a3b8';
-    }
+  getStatusColor(status: string): string {
+    const colors: Record<string, string> = { Todo: '#94a3b8', InProgress: '#3b82f6', InReview: '#f59e0b', Done: '#10b981' };
+    return colors[status] || '#94a3b8';
+  }
 }

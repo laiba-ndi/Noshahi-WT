@@ -1,14 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { TimeEntry, WorkItem } from '../../models/interfaces';
 
 @Component({
-    selector: 'app-time-tracking',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-time-tracking',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="time-page animate-fade-in">
       <div class="page-header">
         <div>
@@ -119,7 +119,7 @@ import { TimeEntry, WorkItem } from '../../models/interfaces';
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .page-header { margin-bottom: 20px; }
     .page-header h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
     .timer-section { padding: 20px; margin-bottom: 16px; }
@@ -168,71 +168,88 @@ import { TimeEntry, WorkItem } from '../../models/interfaces';
   `]
 })
 export class TimeTrackingComponent implements OnInit, OnDestroy {
-    runningTimer: TimeEntry | null = null;
-    entries: TimeEntry[] = [];
-    workItems: WorkItem[] = [];
-    showManual = false;
-    newTimer: any = { workItemId: null, description: '' };
-    manualEntry: any = { workItemId: null, description: '', startTime: '', endTime: '' };
-    private tickInterval: any;
+  runningTimer: TimeEntry | null = null;
+  entries: TimeEntry[] = [];
+  workItems: WorkItem[] = [];
+  showManual = false;
+  newTimer: any = { workItemId: null, description: '' };
+  manualEntry: any = { workItemId: null, description: '', startTime: '', endTime: '' };
+  private tickInterval: any;
 
-    constructor(private api: ApiService) { }
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) { }
 
-    ngOnInit() {
-        this.loadData();
-        this.tickInterval = setInterval(() => { }, 1000); // force re-render for timer
-    }
+  ngOnInit() {
+    this.loadData();
+    this.tickInterval = setInterval(() => {
+      this.cdr.markForCheck();
+    }, 1000); // force re-render for timer
+  }
 
-    loadData() {
-        this.api.getRunningTimer().subscribe(t => this.runningTimer = t);
-        this.api.getTimeEntries().subscribe(e => this.entries = e);
-        this.api.getWorkItems().subscribe(w => this.workItems = w);
-    }
+  loadData() {
+    this.api.getRunningTimer().subscribe(t => {
+      this.runningTimer = t;
+      this.cdr.markForCheck();
+    });
+    this.api.getTimeEntries().subscribe(e => {
+      this.entries = e;
+      this.cdr.markForCheck();
+    });
+    this.api.getWorkItems().subscribe(w => {
+      this.workItems = w;
+      this.cdr.markForCheck();
+    });
+  }
 
-    startTimer() {
-        this.api.startTimer(this.newTimer.workItemId, this.newTimer.description).subscribe({
-            next: (t) => { this.runningTimer = t; this.newTimer = { workItemId: null, description: '' }; }
-        });
-    }
+  startTimer() {
+    this.api.startTimer(this.newTimer.workItemId, this.newTimer.description).subscribe({
+      next: (t) => {
+        this.runningTimer = t;
+        this.newTimer = { workItemId: null, description: '' };
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
-    stopTimer() {
-        if (!this.runningTimer) return;
-        this.api.stopTimer(this.runningTimer.id).subscribe({
-            next: (t) => {
-                this.runningTimer = null;
-                this.entries.unshift(t);
-            }
-        });
-    }
+  stopTimer() {
+    if (!this.runningTimer) return;
+    this.api.stopTimer(this.runningTimer.id).subscribe({
+      next: (t) => {
+        this.runningTimer = null;
+        this.entries.unshift(t);
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
-    logManualTime() {
-        this.api.logManualTime(this.manualEntry).subscribe({
-            next: (t) => {
-                this.entries.unshift(t);
-                this.showManual = false;
-                this.manualEntry = { workItemId: null, description: '', startTime: '', endTime: '' };
-            }
-        });
-    }
+  logManualTime() {
+    this.api.logManualTime(this.manualEntry).subscribe({
+      next: (t) => {
+        this.entries.unshift(t);
+        this.showManual = false;
+        this.manualEntry = { workItemId: null, description: '', startTime: '', endTime: '' };
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
-    formatTime(): string {
-        if (!this.runningTimer) return '00:00:00';
-        const diff = Math.floor((Date.now() - new Date(this.runningTimer.startTime).getTime()) / 1000);
-        const h = Math.floor(diff / 3600);
-        const m = Math.floor((diff % 3600) / 60);
-        const s = diff % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-    }
+  formatTime(): string {
+    if (!this.runningTimer) return '00:00:00';
+    const diff = Math.floor((Date.now() - new Date(this.runningTimer.startTime).getTime()) / 1000);
+    const h = Math.floor(diff / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    const s = diff % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
 
-    formatDuration(minutes: number): string {
-        const h = Math.floor(minutes / 60);
-        const m = Math.floor(minutes % 60);
-        return h > 0 ? `${h}h ${m}m` : `${m}m`;
-    }
+  formatDuration(minutes: number): string {
+    const h = Math.floor(minutes / 60);
+    const m = Math.floor(minutes % 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
 
-    getTotalHours(): number {
-        return this.entries.reduce((sum, e) => sum + e.duration, 0) / 60;
-    }
+  getTotalHours(): number {
+    return this.entries.reduce((sum, e) => sum + e.duration, 0) / 60;
+  }
 
-    ngOnDestroy() { clearInterval(this.tickInterval); }
+  ngOnDestroy() { clearInterval(this.tickInterval); }
 }

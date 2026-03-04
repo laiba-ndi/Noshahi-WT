@@ -100,7 +100,7 @@ import { AuthService } from '../../services/auth.service';
     .login-container {
       position: relative;
       z-index: 1;
-      background: rgba(20, 20, 50, 0.8);
+      background: rgba(255, 255, 255, 0.9);
       backdrop-filter: blur(40px);
       border: 1px solid var(--border);
       border-radius: var(--radius-xl);
@@ -208,9 +208,9 @@ import { AuthService } from '../../services/auth.service';
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    .demo-role.admin { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
-    .demo-role.manager { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-    .demo-role.employee { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .demo-role.admin { background: rgba(139, 92, 246, 0.15); color: #7c3aed; }
+    .demo-role.manager { background: rgba(59, 130, 246, 0.15); color: #2563eb; }
+    .demo-role.employee { background: rgba(16, 185, 129, 0.15); color: #059669; }
   `]
 })
 export class LoginComponent {

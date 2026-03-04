@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,10 +7,10 @@ import { AuthService } from '../../services/auth.service';
 import { Project } from '../../models/interfaces';
 
 @Component({
-    selector: 'app-projects',
-    standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule],
-    template: `
+  selector: 'app-projects',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule],
+  template: `
     <div class="projects-page animate-fade-in">
       <div class="page-header">
         <div>
@@ -104,7 +104,7 @@ import { Project } from '../../models/interfaces';
       }
     </div>
   `,
-    styles: [`
+  styles: [`
     .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
     .page-header h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
     .projects-grid {
@@ -157,41 +157,49 @@ import { Project } from '../../models/interfaces';
   `]
 })
 export class ProjectsComponent implements OnInit {
-    projects: Project[] = [];
-    loading = true;
-    showCreateModal = false;
-    colors = ['#6366f1', '#8b5cf6', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#f97316'];
-    newProject = { name: '', key: '', description: '', color: '#6366f1' };
+  projects: Project[] = [];
+  loading = true;
+  showCreateModal = false;
+  colors = ['#6366f1', '#8b5cf6', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#f97316'];
+  newProject = { name: '', key: '', description: '', color: '#6366f1' };
 
-    constructor(public api: ApiService, public auth: AuthService) { }
+  constructor(public api: ApiService, public auth: AuthService, private cdr: ChangeDetectorRef) { }
 
-    ngOnInit() {
-        this.loadProjects();
-    }
+  ngOnInit() {
+    this.loadProjects();
+  }
 
-    loadProjects() {
-        this.api.getProjects().subscribe({
-            next: (p) => { this.projects = p; this.loading = false; },
-            error: () => this.loading = false
-        });
-    }
+  loadProjects() {
+    this.api.getProjects().subscribe({
+      next: (p) => {
+        this.projects = p;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
-    getProgress(p: Project): number {
-        return p.totalItems ? (p.doneItems / p.totalItems) * 100 : 0;
-    }
+  getProgress(p: Project): number {
+    return p.totalItems ? (p.doneItems / p.totalItems) * 100 : 0;
+  }
 
-    createProject() {
-        this.api.createProject(this.newProject).subscribe({
-            next: (p) => {
-                this.projects.unshift(p);
-                this.showCreateModal = false;
-                this.newProject = { name: '', key: '', description: '', color: '#6366f1' };
-            }
-        });
-    }
+  createProject() {
+    this.api.createProject(this.newProject).subscribe({
+      next: (p) => {
+        this.projects.unshift(p);
+        this.showCreateModal = false;
+        this.newProject = { name: '', key: '', description: '', color: '#6366f1' };
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
-    goToBoard(p: Project) {
-        // Navigate to board filtered by this project
-        window.location.href = `/board?projectId=${p.id}`;
-    }
+  goToBoard(p: Project) {
+    // Navigate to board filtered by this project
+    window.location.href = `/board?projectId=${p.id}`;
+  }
 }

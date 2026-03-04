@@ -1,14 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Dashboard, ProjectSummary, TeamWorkload } from '../../models/interfaces';
 
 @Component({
-    selector: 'app-reports',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
+  selector: 'app-reports',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
     <div class="reports-page animate-fade-in">
       <div class="page-header"><div><h1>Reports & Analytics</h1><p class="text-muted">Track performance</p></div></div>
       @if (loading) { <div class="page-loader"><div class="spinner spinner-lg"></div></div> }
@@ -47,7 +47,7 @@ import { Dashboard, ProjectSummary, TeamWorkload } from '../../models/interfaces
       }
     </div>
   `,
-    styles: [`
+  styles: [`
     .page-header{margin-bottom:24px} .page-header h1{font-size:24px;font-weight:800;margin-bottom:4px}
     .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
     .s-card{padding:20px;text-align:center} .s-val{font-size:32px;font-weight:800;margin-bottom:4px} .s-lbl{font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px}
@@ -59,16 +59,32 @@ import { Dashboard, ProjectSummary, TeamWorkload } from '../../models/interfaces
   `]
 })
 export class ReportsComponent implements OnInit {
-    dashboard: Dashboard | null = null;
-    teamWorkload: TeamWorkload[] = [];
-    loading = true;
-    completionRate = 0;
-    constructor(private api: ApiService, public auth: AuthService) { }
-    ngOnInit() {
-        this.api.getDashboard().subscribe({ next: d => { this.dashboard = d; this.completionRate = d.totalTasks ? (d.completedTasks / d.totalTasks) * 100 : 0; this.loading = false; }, error: () => this.loading = false });
-        if (this.auth.isAdminOrManager()) this.api.getTeamWorkload().subscribe(w => this.teamWorkload = w);
+  dashboard: Dashboard | null = null;
+  teamWorkload: TeamWorkload[] = [];
+  loading = true;
+  completionRate = 0;
+  constructor(private api: ApiService, public auth: AuthService, private cdr: ChangeDetectorRef) { }
+  ngOnInit() {
+    this.api.getDashboard().subscribe({
+      next: d => {
+        this.dashboard = d;
+        this.completionRate = d.totalTasks ? (d.completedTasks / d.totalTasks) * 100 : 0;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
+    });
+    if (this.auth.isAdminOrManager()) {
+      this.api.getTeamWorkload().subscribe(w => {
+        this.teamWorkload = w;
+        this.cdr.markForCheck();
+      });
     }
-    getProg(p: ProjectSummary): number { return p.totalItems ? (p.doneCount / p.totalItems) * 100 : 0; }
-    getIn(n: string): string { return n.split(' ').map(x => x[0]).join('').toUpperCase().substring(0, 2); }
-    getAC(n: string): string { const c = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']; let h = 0; for (let i = 0; i < n.length; i++) h = n.charCodeAt(i) + ((h << 5) - h); return c[Math.abs(h) % c.length]; }
+  }
+  getProg(p: ProjectSummary): number { return p.totalItems ? (p.doneCount / p.totalItems) * 100 : 0; }
+  getIn(n: string): string { return n.split(' ').map(x => x[0]).join('').toUpperCase().substring(0, 2); }
+  getAC(n: string): string { const c = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']; let h = 0; for (let i = 0; i < n.length; i++) h = n.charCodeAt(i) + ((h << 5) - h); return c[Math.abs(h) % c.length]; }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -7,10 +7,10 @@ import { AuthService } from '../../services/auth.service';
 import { WorkItem, Project, User } from '../../models/interfaces';
 
 @Component({
-    selector: 'app-board',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-board',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="board-page animate-fade-in">
       <div class="page-header">
         <div>
@@ -125,8 +125,12 @@ import { WorkItem, Project, User } from '../../models/interfaces';
                   <label>Assignee</label>
                   <select class="form-control" [(ngModel)]="newTask.assigneeId" name="assignee">
                     <option [ngValue]="null">Unassigned</option>
-                    @for (u of users; track u.id) {
-                      <option [ngValue]="u.id">{{ u.fullName }}</option>
+                    @if (!auth.isAdminOrManager()) {
+                      <option [ngValue]="auth.getCurrentUser()?.id">{{ auth.getCurrentUser()?.fullName }}</option>
+                    } @else {
+                      @for (u of users; track u.id) {
+                        <option [ngValue]="u.id">{{ u.fullName }}</option>
+                      }
                     }
                   </select>
                 </div>
@@ -199,7 +203,7 @@ import { WorkItem, Project, User } from '../../models/interfaces';
       }
     </div>
   `,
-    styles: [`
+  styles: [`
     .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
     .page-header h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
     .header-actions { display: flex; gap: 10px; align-items: center; }
@@ -288,110 +292,143 @@ import { WorkItem, Project, User } from '../../models/interfaces';
     .detail-item { }
     .detail-label { display: block; font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     .detail-item select { padding: 6px 10px; font-size: 12px; }
+
+    @media (max-width: 768px) {
+      .page-header { flex-direction: column; gap: 12px; }
+      .header-actions { width: 100%; justify-content: space-between; gap: 8px; }
+      .header-actions select { flex: 1; min-width: 0; }
+      .board-column { min-width: 260px; width: 260px; }
+    }
   `]
 })
 export class BoardComponent implements OnInit {
-    items: WorkItem[] = [];
-    projects: Project[] = [];
-    users: User[] = [];
-    loading = true;
-    selectedProjectId = 0;
-    showCreateModal = false;
-    selectedTask: WorkItem | null = null;
-    draggedItem: WorkItem | null = null;
+  items: WorkItem[] = [];
+  projects: Project[] = [];
+  users: User[] = [];
+  loading = true;
+  selectedProjectId = 0;
+  showCreateModal = false;
+  selectedTask: WorkItem | null = null;
+  draggedItem: WorkItem | null = null;
 
-    columns = [
-        { id: 'Todo', label: 'To Do', color: '#94a3b8' },
-        { id: 'InProgress', label: 'In Progress', color: '#3b82f6' },
-        { id: 'InReview', label: 'In Review', color: '#f59e0b' },
-        { id: 'Done', label: 'Done', color: '#10b981' }
-    ];
+  columns = [
+    { id: 'Todo', label: 'To Do', color: '#94a3b8' },
+    { id: 'InProgress', label: 'In Progress', color: '#3b82f6' },
+    { id: 'InReview', label: 'In Review', color: '#f59e0b' },
+    { id: 'Done', label: 'Done', color: '#10b981' }
+  ];
 
-    newTask: any = { title: '', description: '', type: 'Task', priority: 'Medium', projectId: null, assigneeId: null, estimatedHours: null, dueDate: null };
+  newTask: any = { title: '', description: '', type: 'Task', priority: 'Medium', projectId: null, assigneeId: null, estimatedHours: null, dueDate: null };
 
-    constructor(private api: ApiService, private auth: AuthService, private route: ActivatedRoute) { }
+  constructor(private api: ApiService, public auth: AuthService, private route: ActivatedRoute, private cdr: ChangeDetectorRef) { }
 
-    ngOnInit() {
-        this.route.queryParams.subscribe(params => {
-            if (params['projectId']) this.selectedProjectId = +params['projectId'];
-            this.loadData();
-        });
+  ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      if (params['projectId']) this.selectedProjectId = +params['projectId'];
+      this.loadData();
+    });
+  }
+
+  loadData() {
+    this.api.getProjects().subscribe(p => {
+      this.projects = p;
+      if (!this.newTask.projectId && p.length) this.newTask.projectId = p[0].id;
+      this.cdr.markForCheck();
+    });
+    this.api.getUsers().subscribe(u => {
+      this.users = u;
+      this.cdr.markForCheck();
+    });
+    this.loadItems();
+  }
+
+  loadItems() {
+    this.api.getWorkItems(this.selectedProjectId || undefined).subscribe({
+      next: (items) => {
+        this.items = items;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  filterByProject() { this.loadItems(); }
+
+  getColumnItems(status: string): WorkItem[] {
+    return this.items.filter(i => i.status === status).sort((a, b) => a.order - b.order);
+  }
+
+  onDragStart(event: DragEvent, item: WorkItem) {
+    this.draggedItem = item;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', item.id.toString());
     }
+  }
 
-    loadData() {
-        this.api.getProjects().subscribe(p => {
-            this.projects = p;
-            if (!this.newTask.projectId && p.length) this.newTask.projectId = p[0].id;
-        });
-        this.api.getUsers().subscribe(u => this.users = u);
-        this.loadItems();
-    }
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  }
 
-    loadItems() {
-        this.api.getWorkItems(this.selectedProjectId || undefined).subscribe({
-            next: (items) => { this.items = items; this.loading = false; },
-            error: () => this.loading = false
-        });
-    }
-
-    filterByProject() { this.loadItems(); }
-
-    getColumnItems(status: string): WorkItem[] {
-        return this.items.filter(i => i.status === status).sort((a, b) => a.order - b.order);
-    }
-
-    onDragStart(event: DragEvent, item: WorkItem) {
-        this.draggedItem = item;
-        if (event.dataTransfer) {
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('text/plain', item.id.toString());
+  onDrop(event: DragEvent, status: string) {
+    event.preventDefault();
+    if (this.draggedItem && this.draggedItem.status !== status) {
+      const oldStatus = this.draggedItem.status;
+      this.draggedItem.status = status;
+      this.api.updateWorkItemStatus(this.draggedItem.id, status).subscribe({
+        error: () => {
+          if (this.draggedItem) this.draggedItem.status = oldStatus;
+          this.cdr.markForCheck();
         }
+      });
+      this.cdr.markForCheck();
+    }
+    this.draggedItem = null;
+  }
+
+  createTask() {
+    if (!this.auth.isAdminOrManager()) {
+      // Employees default assign to self if not unassigned
+      if (this.newTask.assigneeId !== null) {
+        this.newTask.assigneeId = this.auth.getCurrentUser()?.id;
+      }
     }
 
-    onDragOver(event: DragEvent) {
-        event.preventDefault();
-        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-    }
+    this.api.createWorkItem(this.newTask).subscribe({
+      next: (item) => {
+        this.items.push(item);
+        this.showCreateModal = false;
+        this.newTask = { title: '', description: '', type: 'Task', priority: 'Medium', projectId: this.projects[0]?.id, assigneeId: null, estimatedHours: null, dueDate: null };
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
-    onDrop(event: DragEvent, status: string) {
-        event.preventDefault();
-        if (this.draggedItem && this.draggedItem.status !== status) {
-            const oldStatus = this.draggedItem.status;
-            this.draggedItem.status = status;
-            this.api.updateWorkItemStatus(this.draggedItem.id, status).subscribe({
-                error: () => { if (this.draggedItem) this.draggedItem.status = oldStatus; }
-            });
-        }
-        this.draggedItem = null;
-    }
+  openDetail(item: WorkItem) { this.selectedTask = item; }
 
-    createTask() {
-        this.api.createWorkItem(this.newTask).subscribe({
-            next: (item) => {
-                this.items.push(item);
-                this.showCreateModal = false;
-                this.newTask = { title: '', description: '', type: 'Task', priority: 'Medium', projectId: this.projects[0]?.id, assigneeId: null, estimatedHours: null, dueDate: null };
-            }
-        });
+  updateTaskStatus(status: string) {
+    if (this.selectedTask) {
+      this.api.updateWorkItemStatus(this.selectedTask.id, status).subscribe(() => {
+        this.cdr.markForCheck();
+      });
+      this.selectedTask.status = status;
+      this.cdr.markForCheck();
     }
+  }
 
-    openDetail(item: WorkItem) { this.selectedTask = item; }
+  getInitials(name: string): string {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  }
 
-    updateTaskStatus(status: string) {
-        if (this.selectedTask) {
-            this.api.updateWorkItemStatus(this.selectedTask.id, status).subscribe();
-            this.selectedTask.status = status;
-        }
-    }
-
-    getInitials(name: string): string {
-        return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-    }
-
-    getAvatarColor(name: string): string {
-        const colors = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
-        let hash = 0;
-        for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-        return colors[Math.abs(hash) % colors.length];
-    }
+  getAvatarColor(name: string): string {
+    const colors = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return colors[Math.abs(hash) % colors.length];
+  }
 }
