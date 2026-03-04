@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import { TimeEntry, WorkItem } from '../../models/interfaces';
 
 @Component({
@@ -109,6 +110,9 @@ import { TimeEntry, WorkItem } from '../../models/interfaces';
               <div class="entry-meta">
                 <span class="entry-duration">{{ formatDuration(e.duration) }}</span>
                 <span class="entry-date text-xs text-muted">{{ e.startTime | date:'shortDate' }}</span>
+                @if (auth.isAdminOrManager() && !e.isRunning) {
+                  <button class="btn btn-xs btn-link" (click)="viewScreenshots(e)">View Proof</button>
+                }
               </div>
             </div>
           }
@@ -117,6 +121,34 @@ import { TimeEntry, WorkItem } from '../../models/interfaces';
           }
         </div>
       </div>
+
+      <!-- Screenshot Gallery Modal -->
+      @if (viewingEntry) {
+        <div class="modal-overlay" (click)="viewingEntry = null">
+          <div class="modal-content gallery-modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>Proof of Work: {{ viewingEntry.userName }}</h2>
+              <button class="btn-icon" (click)="viewingEntry = null">✕</button>
+            </div>
+            <div class="gallery-content">
+              @if (loadingScreenshots) {
+                <div class="spinner"></div>
+              } @else if (screenshots.length === 0) {
+                <div class="empty-state">No screenshots captured for this session.</div>
+              } @else {
+                <div class="screenshot-grid">
+                  @for (s of screenshots; track s.id) {
+                    <div class="screenshot-item">
+                      <img [src]="s.screenshotData" alt="Work screen capture">
+                      <div class="screenshot-time">{{ s.capturedAt | date:'shortTime' }}</div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -165,6 +197,14 @@ import { TimeEntry, WorkItem } from '../../models/interfaces';
     .entry-task { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
     .entry-meta { text-align: right; }
     .entry-duration { font-size: 15px; font-weight: 700; display: block; }
+    .btn-xs { padding: 2px 8px; font-size: 10px; height: auto; }
+    .btn-link { background: none; color: var(--color-primary); text-decoration: underline; cursor: pointer; border: none; }
+    
+    .gallery-modal { max-width: 900px !important; width: 90%; }
+    .screenshot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; margin-top: 16px; }
+    .screenshot-item { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .screenshot-item img { width: 100%; height: auto; display: block; }
+    .screenshot-time { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; font-size: 10px; }
   `]
 })
 export class TimeTrackingComponent implements OnInit, OnDestroy {
@@ -174,9 +214,20 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
   showManual = false;
   newTimer: any = { workItemId: null, description: '' };
   manualEntry: any = { workItemId: null, description: '', startTime: '', endTime: '' };
-  private tickInterval: any;
 
-  constructor(private api: ApiService, private cdr: ChangeDetectorRef) { }
+  viewingEntry: TimeEntry | null = null;
+  screenshots: any[] = [];
+  loadingScreenshots = false;
+
+  private tickInterval: any;
+  private screenshotTimeout: any;
+  private screenStream: MediaStream | null = null;
+
+  constructor(
+    private api: ApiService,
+    public auth: AuthService,
+    private cdr: ChangeDetectorRef
+  ) { }
 
   ngOnInit() {
     this.loadData();
@@ -200,14 +251,72 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
     });
   }
 
-  startTimer() {
-    this.api.startTimer(this.newTimer.workItemId, this.newTimer.description).subscribe({
-      next: (t) => {
-        this.runningTimer = t;
-        this.newTimer = { workItemId: null, description: '' };
-        this.cdr.markForCheck();
+  async startTimer() {
+    try {
+      this.screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface: 'monitor' } as any,
+        audio: false
+      });
+
+      this.api.startTimer(this.newTimer.workItemId, this.newTimer.description).subscribe({
+        next: (t) => {
+          this.runningTimer = t;
+          this.newTimer = { workItemId: null, description: '' };
+          this.scheduleNextScreenshot();
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.stopScreenStream();
+        }
+      });
+    } catch (err) {
+      console.error('Screen capture permission denied', err);
+      // We could show a notification here if needed
+    }
+  }
+
+  private stopScreenStream() {
+    if (this.screenStream) {
+      this.screenStream.getTracks().forEach(track => track.stop());
+      this.screenStream = null;
+    }
+    if (this.screenshotTimeout) {
+      clearTimeout(this.screenshotTimeout);
+    }
+  }
+
+  private scheduleNextScreenshot() {
+    if (!this.runningTimer || !this.screenStream) return;
+
+    // Random interval between 5 and 15 minutes (for demo purposes, let's do 1-3 minutes)
+    const delay = (Math.random() * 2 + 1) * 60 * 1000;
+
+    this.screenshotTimeout = setTimeout(() => {
+      this.captureAndUpload();
+      this.scheduleNextScreenshot();
+    }, delay);
+  }
+
+  private captureAndUpload() {
+    if (!this.runningTimer || !this.screenStream) return;
+
+    const video = document.createElement('video');
+    video.srcObject = this.screenStream;
+    video.play();
+
+    video.onloadedmetadata = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        this.api.uploadScreenshot(this.runningTimer!.id, dataUrl).subscribe();
       }
-    });
+      video.pause();
+      video.srcObject = null;
+    };
   }
 
   stopTimer() {
@@ -216,6 +325,7 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
       next: (t) => {
         this.runningTimer = null;
         this.entries.unshift(t);
+        this.stopScreenStream();
         this.cdr.markForCheck();
       }
     });
@@ -251,5 +361,25 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
     return this.entries.reduce((sum, e) => sum + e.duration, 0) / 60;
   }
 
-  ngOnDestroy() { clearInterval(this.tickInterval); }
+  viewScreenshots(e: TimeEntry) {
+    this.viewingEntry = e;
+    this.loadingScreenshots = true;
+    this.screenshots = [];
+    this.api.getScreenshots(e.id).subscribe({
+      next: (s) => {
+        this.screenshots = s;
+        this.loadingScreenshots = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loadingScreenshots = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    clearInterval(this.tickInterval);
+    this.stopScreenStream();
+  }
 }

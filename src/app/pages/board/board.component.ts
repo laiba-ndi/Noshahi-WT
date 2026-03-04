@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 import { WorkItem, Project, User } from '../../models/interfaces';
 
 @Component({
@@ -320,7 +321,13 @@ export class BoardComponent implements OnInit {
 
   newTask: any = { title: '', description: '', type: 'Task', priority: 'Medium', projectId: null, assigneeId: null, estimatedHours: null, dueDate: null };
 
-  constructor(private api: ApiService, public auth: AuthService, private route: ActivatedRoute, private cdr: ChangeDetectorRef) { }
+  constructor(
+    private api: ApiService,
+    public auth: AuthService,
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef,
+    private notification: NotificationService
+  ) { }
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
@@ -381,9 +388,13 @@ export class BoardComponent implements OnInit {
       const oldStatus = this.draggedItem.status;
       this.draggedItem.status = status;
       this.api.updateWorkItemStatus(this.draggedItem.id, status).subscribe({
+        next: () => {
+          this.notification.success('Status Updated', `Task moved to ${status}`);
+        },
         error: () => {
           if (this.draggedItem) this.draggedItem.status = oldStatus;
           this.cdr.markForCheck();
+          this.notification.error('Update Failed', 'Could not update task status');
         }
       });
       this.cdr.markForCheck();
@@ -405,6 +416,10 @@ export class BoardComponent implements OnInit {
         this.showCreateModal = false;
         this.newTask = { title: '', description: '', type: 'Task', priority: 'Medium', projectId: this.projects[0]?.id, assigneeId: null, estimatedHours: null, dueDate: null };
         this.cdr.markForCheck();
+        this.notification.success('Task Created', `Successfully created ${item.itemKey}`);
+      },
+      error: () => {
+        this.notification.error('Create Failed', 'Could not create task');
       }
     });
   }
@@ -414,6 +429,7 @@ export class BoardComponent implements OnInit {
   updateTaskStatus(status: string) {
     if (this.selectedTask) {
       this.api.updateWorkItemStatus(this.selectedTask.id, status).subscribe(() => {
+        this.notification.success('Status Updated', `Task is now ${status}`);
         this.cdr.markForCheck();
       });
       this.selectedTask.status = status;

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 import { Project } from '../../models/interfaces';
 
 @Component({
@@ -163,7 +164,12 @@ export class ProjectsComponent implements OnInit {
   colors = ['#6366f1', '#8b5cf6', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#f97316'];
   newProject = { name: '', key: '', description: '', color: '#6366f1' };
 
-  constructor(public api: ApiService, public auth: AuthService, private cdr: ChangeDetectorRef) { }
+  constructor(
+    public api: ApiService,
+    public auth: AuthService,
+    private cdr: ChangeDetectorRef,
+    private notification: NotificationService
+  ) { }
 
   ngOnInit() {
     this.loadProjects();
@@ -194,6 +200,10 @@ export class ProjectsComponent implements OnInit {
         this.showCreateModal = false;
         this.newProject = { name: '', key: '', description: '', color: '#6366f1' };
         this.cdr.markForCheck();
+        this.notification.success('Project Created', `Successfully created ${p.name}`);
+      },
+      error: () => {
+        this.notification.error('Create Failed', 'Could not create project');
       }
     });
   }

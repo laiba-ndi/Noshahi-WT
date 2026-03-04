@@ -88,6 +88,12 @@ export class ApiService {
     deleteTimeEntry(id: number): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}/timetracking/${id}`);
     }
+    uploadScreenshot(timeEntryId: number, screenshotData: string): Observable<any> {
+        return this.http.post(`${this.apiUrl}/timetracking/screenshot`, { timeEntryId, screenshotData });
+    }
+    getScreenshots(timeEntryId: number): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/timetracking/screenshot/${timeEntryId}`);
+    }
 
     // Reports
     getDashboard(): Observable<Dashboard> {

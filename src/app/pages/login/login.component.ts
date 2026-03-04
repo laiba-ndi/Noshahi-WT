@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
-    selector: 'app-login',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-login',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="login-page">
       <div class="login-bg">
         <div class="bg-orb orb-1"></div>
@@ -74,7 +75,7 @@ import { AuthService } from '../../services/auth.service';
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .login-page {
       height: 100vh;
       display: flex;
@@ -214,38 +215,44 @@ import { AuthService } from '../../services/auth.service';
   `]
 })
 export class LoginComponent {
-    email = '';
-    password = '';
-    error = '';
-    loading = false;
+  email = '';
+  password = '';
+  error = '';
+  loading = false;
 
-    constructor(private authService: AuthService, private router: Router) {
-        if (this.authService.isLoggedIn()) {
-            this.router.navigate(['/dashboard']);
-        }
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private notification: NotificationService
+  ) {
+    if (this.authService.isLoggedIn()) {
+      this.router.navigate(['/dashboard']);
     }
+  }
 
-    fillDemo(type: string) {
-        const accounts: Record<string, { email: string, password: string }> = {
-            admin: { email: 'admin@noshahi.com', password: 'Admin@123' },
-            manager: { email: 'manager@noshahi.com', password: 'Manager@123' },
-            employee: { email: 'employee@noshahi.com', password: 'Employee@123' }
-        };
-        this.email = accounts[type].email;
-        this.password = accounts[type].password;
-    }
+  fillDemo(type: string) {
+    const accounts: Record<string, { email: string, password: string }> = {
+      admin: { email: 'admin@noshahi.com', password: 'Admin@123' },
+      manager: { email: 'manager@noshahi.com', password: 'Manager@123' },
+      employee: { email: 'employee@noshahi.com', password: 'Employee@123' }
+    };
+    this.email = accounts[type].email;
+    this.password = accounts[type].password;
+  }
 
-    login() {
-        this.loading = true;
-        this.error = '';
-        this.authService.login(this.email, this.password).subscribe({
-            next: () => {
-                this.router.navigate(['/dashboard']);
-            },
-            error: (err) => {
-                this.error = err.error?.message || 'Login failed. Please try again.';
-                this.loading = false;
-            }
-        });
-    }
+  login() {
+    this.loading = true;
+    this.error = '';
+    this.authService.login(this.email, this.password).subscribe({
+      next: (res) => {
+        this.notification.welcome(res.user);
+        this.router.navigate(['/dashboard']);
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Login failed. Please try again.';
+        this.loading = false;
+        this.notification.error('Login Failed', this.error);
+      }
+    });
+  }
 }

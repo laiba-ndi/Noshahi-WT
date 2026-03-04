@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 import { User } from '../../models/interfaces';
 
 @Component({
@@ -182,7 +183,12 @@ export class TeamComponent implements OnInit {
   inviteLoading = false;
   inviteError = '';
 
-  constructor(public api: ApiService, public auth: AuthService, private cdr: ChangeDetectorRef) { }
+  constructor(
+    public api: ApiService,
+    public auth: AuthService,
+    private cdr: ChangeDetectorRef,
+    private notification: NotificationService
+  ) { }
 
   ngOnInit() {
     this.loadUsers();
@@ -205,6 +211,7 @@ export class TeamComponent implements OnInit {
   toggleActive(u: User) {
     this.api.toggleUserActive(u.id).subscribe(() => {
       u.isActive = !u.isActive;
+      this.notification.success('Status Updated', `${u.fullName} is now ${u.isActive ? 'active' : 'hidden'}`);
       this.cdr.markForCheck();
     });
   }
@@ -217,7 +224,11 @@ export class TeamComponent implements OnInit {
   updateRole() {
     if (this.selectedUser) {
       this.api.changeUserRole(this.selectedUser.id, this.newRole).subscribe(() => {
-        if (this.selectedUser) this.selectedUser.role = this.newRole;
+        if (this.selectedUser) {
+          const name = this.selectedUser.fullName;
+          this.selectedUser.role = this.newRole;
+          this.notification.success('Role Updated', `${name} is now a ${this.newRole}`);
+        }
         this.selectedUser = null;
         this.cdr.markForCheck();
       });
@@ -229,10 +240,11 @@ export class TeamComponent implements OnInit {
     this.inviteError = '';
     this.cdr.markForCheck();
     this.api.registerUser(this.newUser).subscribe({
-      next: () => {
+      next: (res) => {
         this.inviteLoading = false;
         this.showInviteModal = false;
         this.newUser = { fullName: '', email: '', password: '', role: 'Employee' };
+        this.notification.success('User Invited', `Successfully invited ${this.newUser.fullName}`);
         this.loadUsers(); // refresh the list
         this.cdr.markForCheck();
       },
