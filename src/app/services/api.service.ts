@@ -152,6 +152,9 @@ export class ApiService {
     downloadDriveFile(id: number): Observable<Blob> {
         return this.http.get(`${this.apiUrl}/drive/download/${id}`, { responseType: 'blob' });
     }
+    viewDriveFile(id: number): Observable<Blob> {
+        return this.http.get(`${this.apiUrl}/drive/view/${id}`, { responseType: 'blob' });
+    }
     deleteDriveFile(id: number): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}/drive/${id}`);
     }
