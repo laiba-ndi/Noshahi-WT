@@ -138,15 +138,27 @@ import { TimeEntry, WorkItem } from '../../models/interfaces';
               } @else {
                 <div class="screenshot-grid">
                   @for (s of screenshots; track s.id) {
-                    <div class="screenshot-item">
+                    <div class="screenshot-item cursor-pointer" (click)="fullscreenScreenshot = s.screenshotData">
                       <img [src]="s.screenshotData" alt="Work screen capture">
                       <div class="screenshot-time">{{ s.capturedAt | date:'shortTime' }}</div>
+                      <div class="hover-overlay">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                        <span>View</span>
+                      </div>
                     </div>
                   }
                 </div>
               }
             </div>
           </div>
+        </div>
+      }
+
+      <!-- Fullscreen View Modal -->
+      @if (fullscreenScreenshot) {
+        <div class="fullscreen-overlay animate-fade-in" (click)="fullscreenScreenshot = null">
+          <button class="btn-icon fullscreen-close" (click)="$event.stopPropagation(); fullscreenScreenshot = null">✕</button>
+          <img [src]="fullscreenScreenshot" class="fullscreen-image animate-scale-up" (click)="$event.stopPropagation()" alt="Fullscreen screenshot">
         </div>
       }
     </div>
@@ -202,9 +214,24 @@ import { TimeEntry, WorkItem } from '../../models/interfaces';
     
     .gallery-modal { max-width: 900px !important; width: 90%; }
     .screenshot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; margin-top: 16px; }
-    .screenshot-item { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .screenshot-item { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); transition: all 0.3s ease; }
+    .screenshot-item:hover { transform: translateY(-3px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.2); border-color: var(--primary); }
     .screenshot-item img { width: 100%; height: auto; display: block; }
-    .screenshot-time { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; font-size: 10px; }
+    .screenshot-time { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: white; padding: 12px 8px 6px; font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .hover-overlay { position: absolute; inset: 0; background: rgba(79, 70, 229, 0.4); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; backdrop-filter: blur(2px); }
+    .hover-overlay svg { width: 32px; height: 32px; margin-bottom: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .hover-overlay span { color: white; font-weight: 600; font-size: 14px; text-shadow: 0 1px 3px rgba(0,0,0,0.5); transform: translateY(10px); transition: transform 0.3s ease; }
+    .screenshot-item:hover .hover-overlay { opacity: 1; }
+    .screenshot-item:hover .hover-overlay svg { transform: scale(1); }
+    .screenshot-item:hover .hover-overlay span { transform: translateY(0); }
+
+    .fullscreen-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999; padding: 40px; }
+    .fullscreen-image { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.1); }
+    .fullscreen-close { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); color: white; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); }
+    .fullscreen-close:hover { background: rgba(239, 68, 68, 0.8); transform: scale(1.1); }
+
+    .animate-scale-up { animation: scale-up 0.4s cubic-bezier(0.19, 1, 0.22, 1) both; }
+    @keyframes scale-up { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
   `]
 })
 export class TimeTrackingComponent implements OnInit, OnDestroy {
@@ -218,6 +245,7 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
   viewingEntry: TimeEntry | null = null;
   screenshots: any[] = [];
   loadingScreenshots = false;
+  fullscreenScreenshot: string | null = null;
 
   private tickInterval: any;
   private screenshotTimeout: any;

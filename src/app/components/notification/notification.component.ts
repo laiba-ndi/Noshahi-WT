@@ -82,7 +82,7 @@ interface Petal {
                   </div>
                 } @else {
                   <button class="btn-premium btn-secondary full-width" (click)="close()">
-                    <span>Confirm</span>
+                    <span>{{ getDefaultButtonText(currentNotification.type) }}</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
                   </button>
                 }
@@ -127,7 +127,7 @@ interface Petal {
     }
 
     .card-inner {
-      background: #0f172a; /* Deep elegant dark background */
+      background: var(--bg-card);
       border-radius: 30px;
       padding: 40px 32px;
       display: flex;
@@ -135,6 +135,7 @@ interface Petal {
       align-items: center;
       position: relative;
       z-index: 2;
+      box-shadow: var(--shadow-lg);
     }
 
     .glow-effect {
@@ -143,7 +144,7 @@ interface Petal {
       left: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+      background: radial-gradient(circle, var(--primary-subtle) 0%, transparent 70%);
       pointer-events: none;
       z-index: 1;
     }
@@ -157,14 +158,14 @@ interface Petal {
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
       padding: 4px 12px 4px 6px;
       border-radius: 100px;
       display: flex;
       align-items: center;
       gap: 8px;
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--text-secondary);
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.5px;
@@ -205,10 +206,10 @@ interface Petal {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
-      border: 1px solid rgba(255,255,255,0.1);
-      color: white;
-      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3);
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      box-shadow: var(--shadow-md);
     }
     .icon-container svg { width: 36px; height: 36px; filter: drop-shadow(0 0 10px currentColor); }
 
@@ -222,15 +223,12 @@ interface Petal {
       font-size: 24px; 
       font-weight: 800; 
       margin-bottom: 12px; 
-      color: white; 
+      color: var(--text-primary); 
       letter-spacing: -0.5px;
-      background: linear-gradient(to bottom, #ffffff, #94a3b8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
     }
     p { 
       font-size: 16px; 
-      color: #94a3b8; 
+      color: var(--text-secondary); 
       line-height: 1.6; 
       max-width: 320px; 
       margin: 0 auto;
@@ -254,16 +252,16 @@ interface Petal {
     }
 
     .btn-primary { 
-      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); 
+      background: var(--gradient-primary); 
       color: white;
       box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
     }
     .btn-secondary { 
-      background: rgba(255, 255, 255, 0.05); 
-      color: white; 
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--bg-glass); 
+      color: var(--text-primary); 
+      border: 1px solid var(--border);
     }
-    .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+    .btn-secondary:hover { background: var(--bg-glass-hover); }
     
     .btn-premium.full-width { width: 100%; }
     .btn-premium svg { width: 18px; height: 18px; transition: transform 0.3s; }
@@ -363,6 +361,15 @@ export class NotificationComponent implements OnInit, OnDestroy {
   closeOnOverlay(event: MouseEvent) {
     if (this.currentNotification?.type !== 'confirm') {
       this.close();
+    }
+  }
+
+  getDefaultButtonText(type: string): string {
+    switch (type) {
+      case 'success': return 'Got it';
+      case 'error': return 'Dismiss';
+      case 'welcome': return "Let's Go!";
+      default: return 'Close';
     }
   }
 }

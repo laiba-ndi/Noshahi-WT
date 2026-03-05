@@ -23,7 +23,7 @@ import { NotificationService } from '../../services/notification.service';
             <div class="logo-icon">
               <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" fill="url(#g1)" stroke="url(#g1)" stroke-width="1.5"/><defs><linearGradient id="g1" x1="4" y1="3" x2="20" y2="21"><stop stop-color="#818cf8"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs></svg>
             </div>
-            <span class="logo-text">TaskWork</span>
+            <span class="logo-text">Noshahi TeamWork</span>
           </div>
           <h1>Welcome back</h1>
           <p>Sign in to your workspace</p>
@@ -55,23 +55,6 @@ import { NotificationService } from '../../services/notification.service';
           </button>
         </form>
 
-        <div class="demo-accounts">
-          <p>Demo Accounts</p>
-          <div class="demo-list">
-            <button class="demo-item" (click)="fillDemo('admin')">
-              <span class="demo-role admin">Admin</span>
-              <span>admin&#64;noshahi.com</span>
-            </button>
-            <button class="demo-item" (click)="fillDemo('manager')">
-              <span class="demo-role manager">Manager</span>
-              <span>manager&#64;noshahi.com</span>
-            </button>
-            <button class="demo-item" (click)="fillDemo('employee')">
-              <span class="demo-role employee">Employee</span>
-              <span>employee&#64;noshahi.com</span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   `,

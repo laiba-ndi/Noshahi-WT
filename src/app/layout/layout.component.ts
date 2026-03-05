@@ -27,7 +27,7 @@ import { switchMap, startWith } from 'rxjs/operators';
               <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" fill="url(#gs)" stroke="url(#gs)" stroke-width="1.5"/><defs><linearGradient id="gs" x1="4" y1="3" x2="20" y2="21"><stop stop-color="#818cf8"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs></svg>
             </div>
             @if (!sidebarCollapsed) {
-              <span class="logo-text">TaskWork</span>
+              <span class="logo-text">Noshahi TeamWork</span>
             }
           </div>
         </div>

@@ -20,5 +20,5 @@ export const routes: Routes = [
             { path: 'team', loadComponent: () => import('./pages/team/team.component').then(m => m.TeamComponent), canActivate: [managerGuard] },
         ]
     },
-    { path: '**', redirectTo: 'dashboard' }
+    { path: '**', redirectTo: 'login' }
 ];
