@@ -147,7 +147,7 @@ import { Dashboard } from '../../models/interfaces';
                   <div class="activity-time text-muted text-xs">{{ timeAgo(a.createdAt) }}</div>
                 </div>
               }
-              @if (!(data.recentActivities?.length)) {
+              @if (!(data.recentActivities.length)) {
                 <div class="empty-state">No recent activity</div>
               }
             </div>

@@ -113,3 +113,14 @@ export interface RecentActivity {
     workItemTitle?: string;
     createdAt: string;
 }
+export interface Notification {
+    id: number;
+    userId: number;
+    title: string;
+    message: string;
+    link?: string;
+    isRead: boolean;
+    createdAt: string;
+    senderId?: number;
+    senderName?: string;
+}

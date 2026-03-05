@@ -15,6 +15,8 @@ export const routes: Routes = [
             { path: 'tasks', loadComponent: () => import('./pages/tasks/tasks.component').then(m => m.TasksComponent) },
             { path: 'time-tracking', loadComponent: () => import('./pages/time-tracking/time-tracking.component').then(m => m.TimeTrackingComponent) },
             { path: 'reports', loadComponent: () => import('./pages/reports/reports.component').then(m => m.ReportsComponent) },
+            { path: 'messages', loadComponent: () => import('./pages/messages/messages.component').then(m => m.MessagesComponent) },
+            { path: 'drive', loadComponent: () => import('./pages/drive/drive.component').then(m => m.DriveComponent) },
             { path: 'team', loadComponent: () => import('./pages/team/team.component').then(m => m.TeamComponent), canActivate: [managerGuard] },
         ]
     },

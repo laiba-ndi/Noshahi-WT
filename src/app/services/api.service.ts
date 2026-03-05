@@ -95,6 +95,25 @@ export class ApiService {
         return this.http.get<any[]>(`${this.apiUrl}/timetracking/screenshot/${timeEntryId}`);
     }
 
+    // Notifications
+    getNotifications(onlyUnread: boolean = true): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/notifications`, { params: { onlyUnread } });
+    }
+    markNotificationAsRead(id: number): Observable<void> {
+        return this.http.patch<void>(`${this.apiUrl}/notifications/${id}/read`, {});
+    }
+
+    // Messages
+    getRecentMessages(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/messages`);
+    }
+    getConversation(otherUserId: number): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/messages/${otherUserId}`);
+    }
+    sendMessage(receiverId: number, content: string): Observable<any> {
+        return this.http.post<any>(`${this.apiUrl}/messages`, { receiverId, content });
+    }
+
     // Reports
     getDashboard(): Observable<Dashboard> {
         return this.http.get<Dashboard>(`${this.apiUrl}/reports/dashboard`);
@@ -121,5 +140,19 @@ export class ApiService {
     }
     changeUserRole(id: number, role: string): Observable<any> {
         return this.http.patch(`${this.apiUrl}/users/${id}/role`, { role });
+    }
+
+    // Drive
+    getDriveFiles(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/drive`);
+    }
+    uploadDriveFile(formData: FormData): Observable<any> {
+        return this.http.post<any>(`${this.apiUrl}/drive/upload`, formData);
+    }
+    downloadDriveFile(id: number): Observable<Blob> {
+        return this.http.get(`${this.apiUrl}/drive/download/${id}`, { responseType: 'blob' });
+    }
+    deleteDriveFile(id: number): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/drive/${id}`);
     }
 }

@@ -14,6 +14,7 @@ export interface Notification {
     type: 'success' | 'error' | 'welcome' | 'confirm';
     duration?: number;
     actions?: NotificationAction[];
+    senderName?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -53,5 +54,9 @@ export class NotificationService {
 
     close() {
         this.notificationsSource.next(null);
+    }
+
+    notify(notif: Notification) {
+        this.notificationsSource.next(notif);
     }
 }
