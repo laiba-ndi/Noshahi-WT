@@ -258,10 +258,23 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
         audio: false
       });
 
+      // Handle user clicking "Stop sharing" in browser UI
+      this.screenStream.getVideoTracks().forEach(track => {
+        track.onended = () => {
+          if (this.runningTimer) {
+            this.stopTimer();
+          }
+        };
+      });
+
       this.api.startTimer(this.newTimer.workItemId, this.newTimer.description).subscribe({
         next: (t) => {
           this.runningTimer = t;
           this.newTimer = { workItemId: null, description: '' };
+
+          // CRITICAL: Capture immediate screenshot so "Proof of Work" isn't empty if stopped quickly
+          setTimeout(() => this.captureAndUpload(), 1000);
+
           this.scheduleNextScreenshot();
           this.cdr.markForCheck();
         },
@@ -271,7 +284,6 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
       });
     } catch (err) {
       console.error('Screen capture permission denied', err);
-      // We could show a notification here if needed
     }
   }
 
@@ -302,20 +314,25 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
 
     const video = document.createElement('video');
     video.srcObject = this.screenStream;
-    video.play();
+    video.muted = true; // Required for some browsers to play without interaction
 
     video.onloadedmetadata = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        this.api.uploadScreenshot(this.runningTimer!.id, dataUrl).subscribe();
-      }
-      video.pause();
-      video.srcObject = null;
+      video.play().then(() => {
+        // Use requestAnimationFrame to ensure a frame is actually rendered before drawing
+        requestAnimationFrame(() => {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+            this.api.uploadScreenshot(this.runningTimer!.id, dataUrl).subscribe();
+          }
+          video.pause();
+          video.srcObject = null;
+        });
+      });
     };
   }
 
